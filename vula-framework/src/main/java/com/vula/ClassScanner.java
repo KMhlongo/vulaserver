@@ -11,29 +11,34 @@ import com.vula.annotations.httpMethod.Get;
 import com.vula.annotations.httpMethod.HttpMethodAnnotation;
 import com.vula.route.Route;
 import com.vula.route.RouteRegistry;
+import com.vula.constants.HttpMethod;
+import com.vula.exception.DuplicateRouteException;
+import com.vula.exception.RouteConfigurationException;
 
 public class ClassScanner {
 
-    private RouteRegistry routeRegistry = RouteRegistry.getInstance();
     private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-    private String basePackagePath;
+    private final String basePackagePath;
+    private final RouteRegistry routeRegistry = new RouteRegistry();
 
     public ClassScanner(String basePackagePath) {
         this.basePackagePath = basePackagePath;
     }
     
-    public void scanBasePackage() {
+    public RouteRegistry scanBasePackage() {
         String packagePath = this.basePackagePath.replace(".", "/");
         classLoader = Thread.currentThread().getContextClassLoader();
         URL url = classLoader.getResource(packagePath);
         try {
             File file = new File(url.toURI());
             handleDirectory(file);
-        } catch (URISyntaxException e) {
-            System.out.println("Failed to load file");
-            System.out.println(e.getStackTrace());
-        }
-        
+        } catch (RouteConfigurationException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RouteConfigurationException(e.getMessage());
+        } 
+        return routeRegistry;
     }
 
     private void handleDirectory(File file) {
@@ -67,25 +72,21 @@ public class ClassScanner {
 
         Controller anno = clazz.getDeclaredAnnotation(Controller.class);
         String controllerPath;
+        if (anno == null) return;
         try {
-            if (anno != null) {
-                Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
-                controllerPath = anno.path();
-                Method[] methods = clazz.getDeclaredMethods();
-                for (Method m : methods) {
-                    System.out.println("Checking to see if method has http annotation");
-                    for (Annotation a : m.getDeclaredAnnotations()) {
-                        if (a.annotationType().isAnnotationPresent(HttpMethodAnnotation.class)) 
-                            handleHttpMethod(controllerInstance, controllerPath, m);
-                    }
+            Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
+            controllerPath = anno.path();
+            for (Method m : clazz.getDeclaredMethods()) {
+                for (Annotation a : m.getDeclaredAnnotations()) {
+                    if (a.annotationType().isAnnotationPresent(HttpMethodAnnotation.class)) 
+                        handleHttpMethod(controllerInstance, controllerPath, m);
                 }
             }
-        } catch (NoSuchMethodException e) {
-            System.out.println("No Default Constructor found for class: " + clazz.getCanonicalName());
-            System.out.println(e.getStackTrace());
+        } catch (RouteConfigurationException e) {
+            throw e;
         } catch (Exception e) {
-            System.out.println("Error instantiaing controllerInstance object from constructor");
-            System.out.println(e.getStackTrace());
+            e.printStackTrace();
+            throw new RouteConfigurationException(e.getMessage());
         }
         
     }
@@ -96,7 +97,12 @@ public class ClassScanner {
             String methodPath = method.getDeclaredAnnotation(Get.class).path();
             String fullPath = controllerPath + "/" + methodPath;
             Route route = new Route(fullPath, controllerInstance, method);
-            routeRegistry.register(route.getPath(), route);
+            try {
+				routeRegistry.register(HttpMethod.GET ,route.getPath(), route);
+			} catch (DuplicateRouteException e) {
+				e.printStackTrace();
+                throw new RouteConfigurationException(e.getMessage());
+			}
         }
     }
 

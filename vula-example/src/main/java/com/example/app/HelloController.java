@@ -12,7 +12,7 @@ public class HelloController {
     }
 
     @Get(path = "world") 
-    public String helloyou() {
+    public String helloworld() {
         return "hello world";
     }
 

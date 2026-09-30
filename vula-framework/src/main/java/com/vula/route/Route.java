@@ -32,4 +32,3 @@ public class Route {
             this.method;
     }
 }
-

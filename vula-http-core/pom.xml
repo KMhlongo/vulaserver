@@ -9,15 +9,6 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <dependencies>
-    <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
-    <dependency>
-      <groupId>tools.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>3.1.0</version>
-    </dependency>
-  </dependencies>
-
   <artifactId>vula-http-core</artifactId>
 
   <name>vula-http-core</name>

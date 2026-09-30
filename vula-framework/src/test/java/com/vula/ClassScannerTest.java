@@ -12,7 +12,6 @@ public class ClassScannerTest {
         ClassScanner classScanner = new ClassScanner(basePackageString);
         classScanner.scanBasePackage();
 
-        System.out.println(RouteRegistry.getInstance().getRoute("random"));
     }
 
 }

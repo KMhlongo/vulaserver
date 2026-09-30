@@ -15,3 +15,6 @@ target/
 
 # Logs
 *.log
+
+# Agent session notes (local only)
+AGENT_NOTES.md

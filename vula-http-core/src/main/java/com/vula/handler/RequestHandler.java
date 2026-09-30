@@ -6,15 +6,16 @@ import java.net.Socket;
 import com.vula.model.HttpRequestMessage;
 import com.vula.model.HttpResponseMessage;
 import com.vula.parser.MessageParser;
-import com.vula.route.RouteRegistry;
 import com.vula.writer.MessageWriter;
 
 public class RequestHandler implements Runnable {
 
     private Socket socket;
+    private HttpHandler httpHandler;
 
-    public RequestHandler(Socket socket) {
+    public RequestHandler(Socket socket, HttpHandler httpHandler) {
         this.socket = socket;
+        this.httpHandler = httpHandler;
     }
 
     public void run() {
@@ -28,7 +29,7 @@ public class RequestHandler implements Runnable {
             System.out.println("requestMessage is " + requestMessage);
                                 
             HttpResponseMessage responseMessage = new HttpResponseMessage();
-            RouteRegistry.getInstance().handleRoute(requestMessage, responseMessage);
+            httpHandler.handleRoute(requestMessage, responseMessage);
                     
             MessageWriter writer = new MessageWriter();
             writer.writeMessage(responseMessage, out);
