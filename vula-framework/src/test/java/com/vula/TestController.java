@@ -10,5 +10,15 @@ public class TestController {
     public double returnRandomNumber() {
         return Math.random();
     }
+
+    @Get(path = "app/{id}")
+    public String getAppId() {
+        return "Some app id";
+    }
+
+    @Get(path = "app/foo/bar")
+    public String foobar() {
+        return "foobar";
+    }
     
 }

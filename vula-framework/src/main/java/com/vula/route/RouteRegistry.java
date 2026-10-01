@@ -1,9 +1,6 @@
 package com.vula.route;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-import java.util.EnumMap;
-import java.util.HashMap;
 
 import com.vula.constants.HttpHeader;
 import com.vula.constants.HttpVersion;
@@ -26,28 +23,14 @@ public class RouteRegistry implements HttpHandler {
     private static final byte[] NO_BODY = new byte[0];
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private Map<String, Map<HttpMethod, Route>> registry = new HashMap<>();
+    RouteNode head = new RouteNode();
 
     public void register(HttpMethod method, String path, Route route) throws DuplicateRouteException {
-        Map<HttpMethod, Route> byMethod = 
-            registry.computeIfAbsent(normalise(path), p -> new EnumMap<>(HttpMethod.class));
-        if (byMethod.putIfAbsent(method, route) != null) {
-            throw new DuplicateRouteException("Route [" + route.getPath() + "] already exists for method [" + method.name() + "]");
-        }
+        head.register(normalise(path).split("/"), 0, method, route);
     }
 
     public Route getRoute(HttpMethod method, String path) throws RouteNotFoundException, RouteMethodNotDefinedException {
-        Map<HttpMethod, Route> byMethod = 
-            registry.get(normalise(path));
-        if (null == byMethod) {
-            throw new RouteNotFoundException("Route [" + path + "] not found");
-        }
-        Route route = byMethod.get(method);
-        if (null == route) {
-            throw new RouteMethodNotDefinedException("Method [" + method.name() + "] not defined for path [" + path + "]");
-        }
-
-        return route;
+        return head.getRoute(normalise(path).split("/"), 0, method);
     }    
 
     String normalise(String path) {

@@ -3,6 +3,7 @@ package com.vula;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -95,6 +96,8 @@ public class ClassScanner {
         System.out.println("Method found: " + method + ", in class: " + controllerInstance.getClass().getName());
         if (method.getDeclaredAnnotation(Get.class) != null) {
             String methodPath = method.getDeclaredAnnotation(Get.class).path();
+            // TODO : implement path variables
+            Parameter[] paramters = method.getParameters();
             String fullPath = controllerPath + "/" + methodPath;
             Route route = new Route(fullPath, controllerInstance, method);
             try {
