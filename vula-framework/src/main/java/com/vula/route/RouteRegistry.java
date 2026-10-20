@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import com.vula.constants.HttpHeader;
 import com.vula.constants.HttpVersion;
 import com.vula.constants.StatusCode;
+import com.vula.exception.BadRequestException;
 import com.vula.exception.DuplicateRouteException;
 import com.vula.exception.RouteMethodNotDefinedException;
 import com.vula.exception.RouteNotFoundException;
@@ -22,6 +23,7 @@ public class RouteRegistry implements HttpHandler {
 
     private static final byte[] NO_BODY = new byte[0];
     private final ObjectMapper mapper = new ObjectMapper();
+    private final ArgumentResolver resolver = new ArgumentResolver();
 
     RouteNode head = new RouteNode();
 
@@ -53,7 +55,10 @@ public class RouteRegistry implements HttpHandler {
 
         try {
             route = getRoute(method, path);
-            Object responseObject = route.getMethod().invoke(route.getControllerInstance());
+  
+            Object[] methodParams = resolver.resolve(route, requestMessage, path);
+
+            Object responseObject = route.getMethod().invoke(route.getControllerInstance(), methodParams);
             byte[] body = (null == responseObject) ? NO_BODY : mapper.writeValueAsBytes(responseObject);
             respond(responseMessage, StatusCode.OK, body);
             return;
@@ -64,6 +69,9 @@ public class RouteRegistry implements HttpHandler {
         } catch (RouteMethodNotDefinedException e) {
 			e.printStackTrace();
             respond(responseMessage, StatusCode.METHOD_NOT_ALLOWED, NO_BODY);
+        } catch (BadRequestException e) {
+            e.printStackTrace();
+            respond(responseMessage, StatusCode.BAD_REQUEST, NO_BODY);
         } catch (InvocationTargetException e) {
             System.err.println("Handler " + path + " threw an exception");
             e.getCause().printStackTrace();

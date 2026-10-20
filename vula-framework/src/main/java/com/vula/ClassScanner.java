@@ -4,7 +4,6 @@ import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 import com.vula.annotations.Controller;
@@ -80,7 +79,7 @@ public class ClassScanner {
             for (Method m : clazz.getDeclaredMethods()) {
                 for (Annotation a : m.getDeclaredAnnotations()) {
                     if (a.annotationType().isAnnotationPresent(HttpMethodAnnotation.class)) 
-                        handleHttpMethod(controllerInstance, controllerPath, m);
+                        handleHttpMethod(controllerInstance, controllerPath, m, a);
                 }
             }
         } catch (RouteConfigurationException e) {
@@ -92,20 +91,20 @@ public class ClassScanner {
         
     }
 
-    private void handleHttpMethod(Object controllerInstance, String controllerPath, Method method) {
+    private void handleHttpMethod(Object controllerInstance, String controllerPath, Method method, Annotation a) {
         System.out.println("Method found: " + method + ", in class: " + controllerInstance.getClass().getName());
-        if (method.getDeclaredAnnotation(Get.class) != null) {
-            String methodPath = method.getDeclaredAnnotation(Get.class).path();
-            // TODO : implement path variables
-            Parameter[] paramters = method.getParameters();
+        try {
+            HttpMethod verb = a.annotationType().getAnnotation(HttpMethodAnnotation.class).value();
+            String methodPath = (String) a.annotationType().getMethod("path").invoke(a);
+    
             String fullPath = controllerPath + "/" + methodPath;
             Route route = new Route(fullPath, controllerInstance, method);
-            try {
-				routeRegistry.register(HttpMethod.GET ,route.getPath(), route);
-			} catch (DuplicateRouteException e) {
-				e.printStackTrace();
-                throw new RouteConfigurationException(e.getMessage());
-			}
+            routeRegistry.register(verb, route.getPath(), route);
+        } catch (DuplicateRouteException e) {
+            e.printStackTrace();
+            throw new RouteConfigurationException(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

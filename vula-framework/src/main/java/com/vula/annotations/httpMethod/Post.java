@@ -5,9 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.vula.constants.HttpMethod;
+
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@HttpMethodAnnotation
+@HttpMethodAnnotation(HttpMethod.POST)
 public @interface Post {
-    
+    String path();
 }
