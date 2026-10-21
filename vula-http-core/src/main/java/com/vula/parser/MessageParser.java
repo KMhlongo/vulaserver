@@ -48,7 +48,7 @@ public class MessageParser {
             crlf = pos;
             while (crlf < limit) {
                 if (out.size() >= MAX_HEADER_LINE_SIZE) {
-                    throw new IOException("Header line is tooo big. What are we doing");
+                    throw new IOException("Header line is too long");
                 }
                 
                 // if we have found a carriage return, write it out to the input stream and return
@@ -81,14 +81,18 @@ public class MessageParser {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         
         if (limit-pos >= size) {
-            out.write(buf, pos, limit-pos);
+            out.write(buf, pos, size);
+            pos += size;
             return out.toByteArray();
         }
 
         do {
-            out.write(buf, pos, limit-pos);
-            size -= limit-pos;
-            if (size <= 0) return out.toByteArray();
+            int n = Math.min(limit-pos, size);
+            out.write(buf, pos, n);
+            pos += n;
+            size -= n;
+            if (size == 0) return out.toByteArray();
+            pos = 0;
         } while ((limit = in.read(buf)) != -1);
         
         throw new IOException();
@@ -97,16 +101,15 @@ public class MessageParser {
     /**
      * Returns the request made by parsing the data from InputStream according to the http format.
      * 
-     * @param socket
+     * @param in InputStream
      * @return Request object consisting of the request line, headers and the body of the request if applicable.
      * @throws IOException
      */
-    public HttpRequestMessage parseMessage(Socket socket) throws IOException {
+    public HttpRequestMessage parseMessage(InputStream in) throws IOException {
 
         HttpRequestMessage request = new HttpRequestMessage();
         
         try {
-            InputStream in = socket.getInputStream();
             // Parse the request line first, obtaining the method, target and the version
             byte[] byteRequestLine = readLine(in);
             String stringRequestLine = new String(byteRequestLine, 0, byteRequestLine.length-1, StandardCharsets.US_ASCII);
@@ -139,11 +142,6 @@ public class MessageParser {
             for (String key : headers.getKeySet()) {
                 System.out.println(key + " : " + headers.getHeader(key));
             }
-
-            // okay now we need to parse the body
-            // we will only parse the body of the request if the following headers are present:
-            // transfer-encoding
-            // content-length
 
             if (headers.containsHeader(HttpHeader.CONTENT_LENGTH.getName())) {
                 System.out.println("Content-Length header found. Reading body");

@@ -2,8 +2,6 @@ package com.vula;
 
 import org.junit.jupiter.api.Test;
 
-import com.vula.route.RouteRegistry;
-
 public class ClassScannerTest {
     
     @Test

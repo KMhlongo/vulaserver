@@ -25,7 +25,7 @@ public class RequestHandler implements Runnable {
         ) {
             
             MessageParser parser = new MessageParser();
-            HttpRequestMessage requestMessage = parser.parseMessage(socket);
+            HttpRequestMessage requestMessage = parser.parseMessage(socket.getInputStream());
             System.out.println("requestMessage is " + requestMessage);
                                 
             HttpResponseMessage responseMessage = new HttpResponseMessage();
