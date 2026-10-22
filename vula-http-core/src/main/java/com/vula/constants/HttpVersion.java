@@ -2,8 +2,7 @@ package com.vula.constants;
 
 public enum HttpVersion {
     
-    HTTP_VERSION_1("HTTP/1.1"),
-    HTTP_VERSION_2("HTTP/1.2");
+    HTTP_VERSION_1("HTTP/1.1");
 
     private String version;
 
@@ -19,7 +18,6 @@ public enum HttpVersion {
         for (HttpVersion v : HttpVersion.values()) {
             if (v.getVersion().equals(version)) return v; 
         }
-        System.out.println("HttpVersion invalid, returning null");
         return null;
     }
 

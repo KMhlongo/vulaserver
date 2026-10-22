@@ -1,6 +1,8 @@
 package com.vula;
 
 import java.net.ServerSocket;
+import java.util.logging.Logger;
+
 
 import com.vula.handler.RequestHandler;
 import com.vula.handler.HttpHandler;
@@ -8,6 +10,7 @@ import com.vula.handler.HttpHandler;
 public class VulaServer {
 
     private HttpHandler httpHandler;
+    private static final Logger logger = Logger.getLogger(VulaServer.class.getName());
 
     public VulaServer(HttpHandler httpHandler) {
         this.httpHandler = httpHandler;
@@ -17,14 +20,13 @@ public class VulaServer {
         try (
             ServerSocket serverSocket = new ServerSocket(port);
         ) {
-            System.out.println("Inet address: " + serverSocket.getInetAddress().toString());
-            System.out.println("Listening on port: " + port);
+            logger.info("Inet address: " + serverSocket.getInetAddress().toString());
+            logger.info("Listening on port: " + port);
             while (true) {
                 new Thread(new RequestHandler(serverSocket.accept(), httpHandler)).start();
             }
            
         } catch (Exception e) {
-            System.out.println("Server error");
             e.printStackTrace();
         }
     }

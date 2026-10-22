@@ -8,7 +8,9 @@ public enum StatusCode {
     FORBIDDEN(403),
     NOT_FOUND(404),
     METHOD_NOT_ALLOWED(405),
-    INTERNAL_SERVER_ERROR(500);
+    INTERNAL_SERVER_ERROR(500),
+    NOT_IMPLEMENTED(501),
+    HTTP_VERSION_NOT_SUPPORTED(505);
 
     private int code;
 

@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
 import com.vula.model.HttpResponseMessage;
+import com.vula.constants.StatusCode;
 
 import static com.vula.constants.HttpHeader.CONTENT_LENGTH;
 
@@ -27,6 +28,10 @@ public class MessageWriter {
             out.println(new String(responseMessage.getBody(), StandardCharsets.US_ASCII));
         }
         
+    }
+
+    public void writeError(StatusCode statusCode, Throwable e) {
+        // TODO write error message when exception has occurred
     }
 
 }
