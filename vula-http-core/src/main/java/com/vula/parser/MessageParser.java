@@ -5,6 +5,7 @@ import static com.vula.constants.HttpVersion.getVersion;
 import static com.vula.constants.HttpMethod.getHttpMethod;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +44,7 @@ public class MessageParser {
      * @return byte array representing a line from the input stream.
      * @throws IOException
      */
-    public byte[] readLine(InputStream in) throws IOException {
+    public byte[] readLine(InputStream in) throws IOException, MalformedRequestException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         boolean lastByteCR = false;
         // check to see if we need to read another line
@@ -51,6 +52,7 @@ public class MessageParser {
         if (pos>=limit) {
             limit = in.read(buf);
             pos = 0;
+            if (limit == -1) return null;
         }        
         
         int crlf;
@@ -58,7 +60,7 @@ public class MessageParser {
             crlf = pos;
             while (crlf < limit) {
                 if (out.size() >= MAX_HEADER_LINE_SIZE) {
-                    throw new IOException("Header line is too long");
+                    throw new MalformedRequestException("Header line exceeds max size of " + MAX_HEADER_LINE_SIZE + " bytes");
                 }
                 
                 // if we have found a carriage return, write it out to the input stream and return
@@ -74,7 +76,7 @@ public class MessageParser {
             lastByteCR = buf[limit-1] == '\r';
         } while ((limit = in.read(buf)) != -1);
 
-        throw new IOException();
+        throw new EOFException("Connection closed in the middle of a line");
         
     }
 
@@ -105,7 +107,7 @@ public class MessageParser {
             pos = 0;
         } while ((limit = in.read(buf)) != -1);
         
-        throw new IOException();
+        throw new EOFException("Connection closed before the full body was received");
     }
     
     /**
@@ -121,6 +123,16 @@ public class MessageParser {
         
         // Parse the request line first, obtaining the method, target and the version
         byte[] byteRequestLine = readLine(in);
+
+        // null means the client closed the connection without sending a request. That is not an error.
+        if (null == byteRequestLine) {
+            return null;
+        }
+
+        if (byteRequestLine.length == 0) {
+            throw new MalformedRequestException("Empty request line");
+        }
+
         String stringRequestLine = new String(byteRequestLine, 0, byteRequestLine.length-1, StandardCharsets.US_ASCII);
         String[] parts = stringRequestLine.split(" ");
 
@@ -138,7 +150,7 @@ public class MessageParser {
             throw new MalformedRequestException(HTTP_VERSION_NOT_SUPPORTED, "HTTP Version Not Supported: " + parts[2]);
         }
 
-        RequestLine requestLine = new RequestLine(HttpMethod.getHttpMethod(parts[0]), parts[1], getVersion(parts[2]));
+        RequestLine requestLine = new RequestLine(method, parts[1], version);
         request.setRequestLine(requestLine);
 
         // Parse headers until the empty line signaling the end of the headers
@@ -148,7 +160,7 @@ public class MessageParser {
         int colonIdx = 0;
 
         // the size of the header needs to be at least 2. It could have a single byte value 13 for carriage return.
-        while ((header = readLine(in)).length > 1) {
+        while (null != (header = readLine(in)) && header.length > 1) {
 
             // There is a max headers size of 8192
             if ((headersSize += header.length) > MAX_HEADERS_SIZE) {
@@ -165,6 +177,9 @@ public class MessageParser {
             for (String part : headerValues) {
                 headers.addHeader(key, part.trim());
             }
+        }
+        if (null == header) {
+            throw new MalformedRequestException("Connection closed before the end of the headers");
         }
         request.setHeaders(headers);
 

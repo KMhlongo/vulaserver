@@ -2,19 +2,22 @@ package com.vula.parser;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
+
+import com.vula.exception.MalformedRequestException;
 
 public class MessageParserTest {
 
     private MessageParser messageParser = new MessageParser();
 
     @Test
-    public void readsSmallBodyThatArrivedWithTheHeaders() throws IOException {
+    public void readsSmallBodyThatArrivedWithTheHeaders() throws Exception {
         String body = "{\"name\":\"vula\"}";
         InputStream in = chunks("Content-Length: 15\r\n" + body);
 
@@ -28,7 +31,7 @@ public class MessageParserTest {
      * that are not part of the body. The body must be complete and stop at the content length.
      */
     @Test
-    public void readsBodySpanningSeveralReadsAndStopsAtContentLength() throws IOException {
+    public void readsBodySpanningSeveralReadsAndStopsAtContentLength() throws Exception {
         InputStream in = chunks("Content-Length: 10000\r\n", "x".repeat(8192), "x".repeat(1808) + "EXTRA");
 
         messageParser.readLine(in);
@@ -42,11 +45,25 @@ public class MessageParserTest {
      * Lines are returned with their trailing carriage return, which callers strip.
      */
     @Test
-    public void readsLinesWhenLineEndingIsSplitAcrossReads() throws IOException {
+    public void readsLinesWhenLineEndingIsSplitAcrossReads() throws Exception {
         InputStream in = chunks("Host: localhost\r", "\nAccept: */*\r\n");
 
         assertEquals("Host: localhost\r", string(messageParser.readLine(in)));
         assertEquals("Accept: */*\r", string(messageParser.readLine(in)));
+    }
+
+    /** A client that connects and closes without sending anything is not an error. */
+    @Test
+    public void emptyConnectionParsesToNull() throws Exception {
+        assertNull(messageParser.parseMessage(chunks()));
+    }
+
+    /** A request cut off partway through the headers is incomplete, so it is rejected. */
+    @Test
+    public void connectionClosedBeforeEndOfHeadersIsMalformed() {
+        InputStream in = chunks("GET /hello HTTP/1.1\r\n", "Host: localhost\r\n");
+
+        assertThrows(MalformedRequestException.class, () -> messageParser.parseMessage(in));
     }
 
     /** Returns each part from its own read() call, like separate TCP packets. */
