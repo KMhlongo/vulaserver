@@ -164,7 +164,7 @@ public class MessageParser {
 
             // There is a max headers size of 8192
             if ((headersSize += header.length) > MAX_HEADERS_SIZE) {
-                throw new MalformedRequestException("Headers exceeds max size of " + MAX_HEADERS_SIZE + " btyes");
+                throw new MalformedRequestException("Headers exceed max size of " + MAX_HEADERS_SIZE + " bytes");
             }
             
             String stringHeader = new String(header, 0, header.length-1, StandardCharsets.US_ASCII);
